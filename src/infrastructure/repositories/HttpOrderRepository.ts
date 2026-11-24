@@ -1,4 +1,4 @@
-import type { Order, OwnedTicket, PlacedOrder } from '../../domain/entities/Order'
+import type { Order, OrderRequestItem, OwnedTicket, PlacedOrder } from '../../domain/entities/Order'
 import type { OrderRepository } from '../../domain/repositories/OrderRepository'
 import { apiRequest } from '../http/api'
 import {
@@ -11,12 +11,16 @@ import {
 
 // Gateway (8080) remove o "/pedido" e repassa ao serviço de pedido (8083)
 export class HttpOrderRepository implements OrderRepository {
-  async place(sessionId: string, idempotencyKey: string): Promise<PlacedOrder> {
+  // Início do ciclo: cria o pedido (PROCESSANDO); o estoque responde depois, via RabbitMQ
+  async place(sessionId: string, items: OrderRequestItem[], idempotencyKey: string): Promise<PlacedOrder> {
     const created = await apiRequest<ApiPedidoCriado>('/pedido/pedidos', {
       method: 'POST',
       auth: true,
       headers: { 'Idempotency-Key': idempotencyKey },
-      body: { sessaoId: sessionId },
+      body: {
+        sessaoId: sessionId,
+        itens: items.map((item) => ({ setorId: item.sectorId, quantidade: item.quantity })),
+      },
     })
     return { orderId: created.pedidoId, status: created.status }
   }

@@ -4,7 +4,7 @@ import { toSalesReport, type ApiRelatorioVendas } from '../src/infrastructure/ht
 describe('mapeamento do pedido (API em português -> app)', () => {
   const pedido: ApiPedido = {
     id: 'p1',
-    status: 'PAGO',
+    status: 'REALIZADO',
     motivo: null,
     eventoTitulo: 'Festival',
     dataEvento: '2027-10-18T20:00:00',
@@ -16,7 +16,7 @@ describe('mapeamento do pedido (API em português -> app)', () => {
   it('converte o pedido com itens e ingressos', () => {
     expect(toOrder(pedido)).toEqual({
       id: 'p1',
-      status: 'PAGO',
+      status: 'REALIZADO',
       reason: null,
       eventTitle: 'Festival',
       eventDate: '2027-10-18T20:00:00',
@@ -26,10 +26,10 @@ describe('mapeamento do pedido (API em português -> app)', () => {
     })
   })
 
-  it('preserva o motivo da recusa', () => {
-    expect(toOrder({ ...pedido, status: 'RECUSADO', motivo: 'Saldo insuficiente', ingressos: [] })).toMatchObject({
-      status: 'RECUSADO',
-      reason: 'Saldo insuficiente',
+  it('preserva o motivo do cancelamento', () => {
+    expect(toOrder({ ...pedido, status: 'CANCELADO', motivo: 'Ingressos insuficientes no setor Pista', ingressos: [] })).toMatchObject({
+      status: 'CANCELADO',
+      reason: 'Ingressos insuficientes no setor Pista',
       tickets: [],
     })
   })
@@ -56,12 +56,12 @@ describe('mapeamento do pedido (API em português -> app)', () => {
 
 describe('mapeamento do relatório de vendas', () => {
   const api: ApiRelatorioVendas = {
-    totais: { pedidosPagos: 2, pedidosRecusados: 1, pedidosCancelados: 0, pedidosEmAndamento: 3, ingressosVendidos: 5, receita: 500 },
+    totais: { pedidosRealizados: 2, pedidosCancelados: 0, pedidosEmAndamento: 3, ingressosVendidos: 5, receita: 500 },
     eventos: [
       {
         eventoId: 'e1',
         eventoTitulo: 'Festival',
-        pedidosPagos: 2,
+        pedidosRealizados: 2,
         ingressosVendidos: 5,
         receita: 500,
         setores: [{ setorNome: 'Pista', ingressosVendidos: 5, receita: 500 }],
@@ -73,8 +73,7 @@ describe('mapeamento do relatório de vendas', () => {
     const report = toSalesReport(api)
 
     expect(report.totals).toEqual({
-      paidOrders: 2,
-      refusedOrders: 1,
+      completedOrders: 2,
       canceledOrders: 0,
       inProgressOrders: 3,
       tickets: 5,
@@ -83,7 +82,7 @@ describe('mapeamento do relatório de vendas', () => {
     expect(report.events[0]).toEqual({
       eventId: 'e1',
       eventTitle: 'Festival',
-      paidOrders: 2,
+      completedOrders: 2,
       tickets: 5,
       revenue: 500,
       sectors: [{ sectorName: 'Pista', tickets: 5, revenue: 500 }],

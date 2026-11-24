@@ -32,35 +32,35 @@ afterEach(() => {
 
 describe('useOrderPolling', () => {
   it('busca o pedido ao abrir', async () => {
-    mockExecute.mockResolvedValue(order('PENDENTE'))
+    mockExecute.mockResolvedValue(order('PROCESSANDO'))
 
     const { result } = await renderHook(() => useOrderPolling('p1'))
     await advance(1)
 
     expect(mockExecute).toHaveBeenCalledWith('p1')
-    expect(result.current.order?.status).toBe('PENDENTE')
+    expect(result.current.order?.status).toBe('PROCESSANDO')
     expect(result.current.loading).toBe(false)
   })
 
   it('consulta de novo a cada 2 s até chegar a um estado final', async () => {
     mockExecute
-      .mockResolvedValueOnce(order('PENDENTE'))
-      .mockResolvedValueOnce(order('CONFIRMANDO'))
-      .mockResolvedValue(order('PAGO'))
+      .mockResolvedValueOnce(order('PROCESSANDO'))
+      .mockResolvedValueOnce(order('PROCESSANDO'))
+      .mockResolvedValue(order('REALIZADO'))
 
     const { result } = await renderHook(() => useOrderPolling('p1'))
     await advance(1)
-    expect(result.current.order?.status).toBe('PENDENTE')
+    expect(result.current.order?.status).toBe('PROCESSANDO')
 
     await advance(2000)
-    expect(result.current.order?.status).toBe('CONFIRMANDO')
+    expect(result.current.order?.status).toBe('PROCESSANDO')
 
     await advance(2000)
-    expect(result.current.order?.status).toBe('PAGO')
+    expect(result.current.order?.status).toBe('REALIZADO')
   })
 
   it('para de consultar quando o pedido termina', async () => {
-    mockExecute.mockResolvedValue(order('RECUSADO'))
+    mockExecute.mockResolvedValue(order('CANCELADO'))
 
     await renderHook(() => useOrderPolling('p1'))
     await advance(1)
@@ -84,19 +84,19 @@ describe('useOrderPolling', () => {
   })
 
   it('falha temporária mostra o erro e continua tentando', async () => {
-    mockExecute.mockRejectedValueOnce(new ApiError('Não foi possível conectar ao servidor.', 0)).mockResolvedValue(order('PAGO'))
+    mockExecute.mockRejectedValueOnce(new ApiError('Não foi possível conectar ao servidor.', 0)).mockResolvedValue(order('REALIZADO'))
 
     const { result } = await renderHook(() => useOrderPolling('p1'))
     await advance(1)
     expect(result.current.error).toMatch(/conectar/)
 
     await advance(2000)
-    expect(result.current.order?.status).toBe('PAGO')
+    expect(result.current.order?.status).toBe('REALIZADO')
     expect(result.current.error).toBe('')
   })
 
   it('conta os segundos enquanto espera', async () => {
-    mockExecute.mockResolvedValue(order('PENDENTE'))
+    mockExecute.mockResolvedValue(order('PROCESSANDO'))
 
     const { result } = await renderHook(() => useOrderPolling('p1'))
     await advance(5000)

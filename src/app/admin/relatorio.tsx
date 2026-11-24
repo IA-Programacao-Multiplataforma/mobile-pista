@@ -57,10 +57,10 @@ function SalesReportScreen() {
             <View style={styles.totals}>
               <Metric label="Receita" value={formatPrice(report.totals.revenue)} />
               <Metric label="Ingressos" value={String(report.totals.tickets)} />
-              <Metric label="Pedidos pagos" value={String(report.totals.paidOrders)} />
+              <Metric label="Pedidos realizados" value={String(report.totals.completedOrders)} />
             </View>
             <Text style={font.small}>
-              recusados {report.totals.refusedOrders} · cancelados {report.totals.canceledOrders} · em andamento{' '}
+              cancelados {report.totals.canceledOrders} · em andamento{' '}
               {report.totals.inProgressOrders}
             </Text>
           </Card>
@@ -71,7 +71,7 @@ function SalesReportScreen() {
             <Card key={event.eventId}>
               <Text style={font.subtitle}>{event.eventTitle}</Text>
               <Text style={font.small}>
-                {event.tickets} ingressos · {event.paidOrders} pedidos · {formatPrice(event.revenue)}
+                {event.tickets} ingressos · {event.completedOrders} pedidos · {formatPrice(event.revenue)}
               </Text>
               {event.sectors.map((sector) => (
                 <View key={sector.sectorName} style={styles.sector}>

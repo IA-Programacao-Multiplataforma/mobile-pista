@@ -26,7 +26,7 @@ function PromoBanner() {
 
 const STEPS = [
   { n: '01', title: 'Escolha seu rolê', text: 'Encontre o próximo evento que combina com você.' },
-  { n: '02', title: 'Entre na fila', text: 'Aguarde sua vez e separe seus ingressos na sacola.' },
+  { n: '02', title: 'Garanta o seu', text: 'Escolha a data, o setor e a quantidade de ingressos.' },
   { n: '03', title: 'Viva o momento', text: 'O melhor da noite é estar lá.' },
 ]
 
@@ -125,7 +125,7 @@ export default function StoreScreen() {
                 </Text>
               </View>
               <View style={styles.heroButton}>
-                <Text style={styles.heroButtonText}>Ver datas e entrar na fila</Text>
+                <Text style={styles.heroButtonText}>Ver datas e comprar</Text>
                 <Ionicons name="arrow-forward" size={16} color={colors.ink} />
               </View>
             </View>

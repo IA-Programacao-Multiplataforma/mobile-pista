@@ -2,8 +2,7 @@ import type { SalesReport } from '../../domain/entities/SalesReport'
 
 export interface ApiRelatorioVendas {
   totais: {
-    pedidosPagos: number
-    pedidosRecusados: number
+    pedidosRealizados: number
     pedidosCancelados: number
     pedidosEmAndamento: number
     ingressosVendidos: number
@@ -12,7 +11,7 @@ export interface ApiRelatorioVendas {
   eventos: {
     eventoId: string
     eventoTitulo: string
-    pedidosPagos: number
+    pedidosRealizados: number
     ingressosVendidos: number
     receita: number
     setores: { setorNome: string; ingressosVendidos: number; receita: number }[]
@@ -22,8 +21,7 @@ export interface ApiRelatorioVendas {
 export function toSalesReport(api: ApiRelatorioVendas): SalesReport {
   return {
     totals: {
-      paidOrders: api.totais.pedidosPagos,
-      refusedOrders: api.totais.pedidosRecusados,
+      completedOrders: api.totais.pedidosRealizados,
       canceledOrders: api.totais.pedidosCancelados,
       inProgressOrders: api.totais.pedidosEmAndamento,
       tickets: api.totais.ingressosVendidos,
@@ -32,7 +30,7 @@ export function toSalesReport(api: ApiRelatorioVendas): SalesReport {
     events: api.eventos.map((event) => ({
       eventId: event.eventoId,
       eventTitle: event.eventoTitulo,
-      paidOrders: event.pedidosPagos,
+      completedOrders: event.pedidosRealizados,
       tickets: event.ingressosVendidos,
       revenue: event.receita,
       sectors: event.setores.map((sector) => ({

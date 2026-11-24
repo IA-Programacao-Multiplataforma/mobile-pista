@@ -1,3 +1,4 @@
+import type { OrderRequestItem } from '../../domain/entities/Order'
 import type { OrderRepository } from '../../domain/repositories/OrderRepository'
 
 export class PlaceOrder {
@@ -7,7 +8,7 @@ export class PlaceOrder {
     this.orders = orders
   }
 
-  execute(sessionId: string, idempotencyKey: string) {
-    return this.orders.place(sessionId, idempotencyKey)
+  execute(sessionId: string, items: OrderRequestItem[], idempotencyKey: string) {
+    return this.orders.place(sessionId, items, idempotencyKey)
   }
 }

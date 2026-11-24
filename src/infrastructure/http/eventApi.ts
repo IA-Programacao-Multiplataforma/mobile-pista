@@ -12,7 +12,6 @@ export interface ApiSetor {
   preco: number
   capacidade: number
   disponivel: number
-  reservado: number
   vendido: number
 }
 
@@ -37,7 +36,7 @@ export interface ApiEvento {
 }
 
 // <input type="datetime-local"> entrega "2026-10-18T14:00"; a API quer os segundos
-const toApiDate = (value: string) => (value.length === 16 ? `${value}:00` : value)
+export const toApiDate = (value: string) => (value.length === 16 ? `${value}:00` : value)
 
 export function toApiSessao(session: NewSessionData) {
   return {
@@ -85,7 +84,6 @@ export function toManagedEvent(api: ApiEvento): ManagedEvent {
         price: sector.preco,
         capacity: sector.capacidade,
         available: sector.disponivel,
-        reserved: sector.reservado,
         sold: sector.vendido,
       })),
     })),

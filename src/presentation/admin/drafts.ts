@@ -20,7 +20,7 @@ export const emptySession = (): SessionDraft => ({ eventDate: '', salesStart: ''
 // "2027-10-18 20:00" -> "2027-10-18T20:00" (o repositório acrescenta os segundos)
 const DATE_TEXT = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/
 
-function toLocalDateTime(text: string, field: string): string {
+export function toLocalDateTime(text: string, field: string): string {
   const trimmed = text.trim()
   if (!DATE_TEXT.test(trimmed)) {
     throw new Error(`${field}: use o formato AAAA-MM-DD HH:MM (ex.: 2027-10-18 20:00).`)
@@ -29,7 +29,13 @@ function toLocalDateTime(text: string, field: string): string {
 }
 
 // "189,90" ou "189.90" -> 189.9
-const toNumber = (value: string) => Number(value.trim().replace(',', '.'))
+export const toNumber = (value: string) => Number(value.trim().replace(',', '.'))
+
+// "2027-10-18T20:00:00" -> "2027-10-18 20:00" (o formato dos campos de data)
+export const isoToDateText = (iso: string) => iso.slice(0, 16).replace('T', ' ')
+
+// 189.9 -> "189,90"
+export const priceToText = (price: number) => price.toFixed(2).replace('.', ',')
 
 export function toSessionData(draft: SessionDraft): NewSessionData {
   return {

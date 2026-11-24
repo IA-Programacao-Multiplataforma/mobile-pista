@@ -4,10 +4,10 @@ export interface ApiPedido {
   id: string
   status: OrderStatus
   motivo: string | null
-  eventoTitulo: string
-  dataEvento: string
-  total: number
-  itens: { setorNome: string; quantidade: number; precoUnitario: number; subtotal: number }[]
+  eventoTitulo: string | null
+  dataEvento: string | null
+  total: number | null
+  itens: { setorNome: string | null; quantidade: number; precoUnitario: number | null; subtotal: number | null }[]
   ingressos: { id: string; setorNome: string; codigo: string }[]
 }
 

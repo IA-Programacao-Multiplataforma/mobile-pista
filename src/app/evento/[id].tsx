@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react'
 import { ActivityIndicator, Image, StyleSheet, View } from 'react-native'
 import { Text } from '../../presentation/components/AppText'
 import { router, useLocalSearchParams } from 'expo-router'
-import type { EventSession, ManagedEvent, SessionStatus } from '../../domain/entities/ManagedEvent'
-import { getEventDetails, joinQueue } from '../../infrastructure/dependencies'
-import { ApiError } from '../../infrastructure/http/api'
+import type { ManagedEvent, SessionStatus } from '../../domain/entities/ManagedEvent'
+import { getEventDetails } from '../../infrastructure/dependencies'
 import { useAuth } from '../../presentation/auth/useAuth'
 import { Button } from '../../presentation/components/Button'
 import { Screen } from '../../presentation/components/Screen'
 import { Banner, Card, Pill } from '../../presentation/components/Ui'
+import { SessionPurchase } from '../../presentation/order/SessionPurchase'
 import { errorText, formatDateTime, formatLongDate, formatPrice, formatTime } from '../../presentation/format'
 import { colors, font, spacing } from '../../presentation/theme'
 import { useLayout } from '../../presentation/useLayout'
@@ -35,8 +35,6 @@ export default function EventScreen() {
   const [event, setEvent] = useState<ManagedEvent | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
-  const [joining, setJoining] = useState<string | null>(null)
-  const [joinError, setJoinError] = useState<{ sessionId: string; message: string } | null>(null)
 
   useEffect(() => {
     getEventDetails
@@ -46,27 +44,11 @@ export default function EventScreen() {
       .finally(() => setLoading(false))
   }, [id])
 
-  const handleJoin = async (session: EventSession) => {
-    if (!user) {
-      router.push({ pathname: '/entrar', params: { from: `/evento/${id}` } })
-      return
-    }
+  const goToLogin = () => router.push({ pathname: '/entrar', params: { from: `/evento/${id}` } })
 
-    setJoining(session.id)
-    setJoinError(null)
-    try {
-      await joinQueue.execute(session.id)
-      router.push(`/fila/${session.id}`)
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
-        await logout()
-        router.push({ pathname: '/entrar', params: { from: `/evento/${id}` } })
-        return
-      }
-      setJoinError({ sessionId: session.id, message: errorText(err, 'Não foi possível entrar na fila.') })
-    } finally {
-      setJoining(null)
-    }
+  const sessionExpired = async () => {
+    await logout()
+    goToLogin()
   }
 
   const now = new Date()
@@ -116,31 +98,31 @@ export default function EventScreen() {
                   <Pill label={STATUS_LABEL[session.status]} tone={STATUS_TONE[session.status]} />
                 </View>
 
-                {session.sectors.map((sector) => (
-                  <View key={sector.id} style={styles.sectorRow}>
-                    <Text style={[font.body, { flex: 1 }]}>{sector.name}</Text>
-                    <Text style={font.body}>{formatPrice(sector.price)}</Text>
-                    <Text style={[font.small, styles.sectorAvailability]}>
-                      {!salesOpen ? 'em breve' : sector.available > 0 ? `${sector.available} disp.` : 'esgotado'}
-                    </Text>
-                  </View>
-                ))}
+                {salesOpen && !soldOut && user ? (
+                  <SessionPurchase session={session} onUnauthorized={sessionExpired} />
+                ) : (
+                  <>
+                    {session.sectors.map((sector) => (
+                      <View key={sector.id} style={styles.sectorRow}>
+                        <Text style={[font.body, { flex: 1 }]}>{sector.name}</Text>
+                        <Text style={font.body}>{formatPrice(sector.price)}</Text>
+                        <Text style={[font.small, styles.sectorAvailability]}>
+                          {!salesOpen ? 'em breve' : sector.available > 0 ? `${sector.available} disp.` : 'esgotado'}
+                        </Text>
+                      </View>
+                    ))}
 
-                {soldOut && <Banner kind="warn">Os ingressos acabaram, mas você pode entrar na fila e aguardar desistências.</Banner>}
-                {joinError?.sessionId === session.id && <Banner>{joinError.message}</Banner>}
+                    {soldOut && <Banner kind="warn">Os ingressos desta data acabaram.</Banner>}
 
-                <Button
-                  title={
-                    !salesOpen
-                      ? `A venda abre em ${formatDateTime(session.salesStart)}`
-                      : user
-                        ? 'Entrar na fila'
-                        : 'Entre para comprar'
-                  }
-                  onPress={() => handleJoin(session)}
-                  disabled={!salesOpen}
-                  loading={joining === session.id}
-                />
+                    {!soldOut && (
+                      <Button
+                        title={!salesOpen ? `A venda abre em ${formatDateTime(session.salesStart)}` : 'Entre para comprar'}
+                        onPress={goToLogin}
+                        disabled={!salesOpen}
+                      />
+                    )}
+                  </>
+                )}
               </Card>
             )
           })}

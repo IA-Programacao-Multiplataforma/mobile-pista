@@ -1,18 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
-import { Text, TextInput } from '../../presentation/components/AppText'
+import { Text } from '../../presentation/components/AppText'
 import { router } from 'expo-router'
-import type { ManagedEvent, Sector, SessionStatus } from '../../domain/entities/ManagedEvent'
-import { addEventSession, adjustSector, deleteEvent, listManagedEvents } from '../../infrastructure/dependencies'
-import { emptySession, toSessionData, type SessionDraft } from '../../presentation/admin/drafts'
-import { SessionFields } from '../../presentation/admin/SessionFields'
+import type { ManagedEvent, SessionStatus } from '../../domain/entities/ManagedEvent'
+import { deleteEvent, listManagedEvents } from '../../infrastructure/dependencies'
 import { RequireAuth } from '../../presentation/auth/RequireAuth'
 import { Button } from '../../presentation/components/Button'
 import { Screen } from '../../presentation/components/Screen'
 import { Banner, Card, Eyebrow, Pill, Title } from '../../presentation/components/Ui'
 import { confirmAction } from '../../presentation/confirm'
 import { errorText, formatDateTime, formatPrice } from '../../presentation/format'
-import { colors, font, radius, spacing } from '../../presentation/theme'
+import { colors, font, spacing } from '../../presentation/theme'
 
 const STATUS_LABEL: Record<SessionStatus, string> = { ESTREIA: 'Estreia', DISPONIVEL: 'Venda aberta', ESGOTADO: 'Esgotado' }
 const STATUS_TONE: Record<SessionStatus, 'warn' | 'ok' | 'danger'> = { ESTREIA: 'warn', DISPONIVEL: 'ok', ESGOTADO: 'danger' }
@@ -73,11 +71,8 @@ interface EventCardProps {
   onError: (message: string) => void
 }
 
+// Resumo do evento na lista; a edição completa fica na tela "Editar"
 function EventCard({ event, onChanged, onError }: EventCardProps) {
-  const [addingDate, setAddingDate] = useState(false)
-  const [draft, setDraft] = useState<SessionDraft>(emptySession())
-  const [saving, setSaving] = useState(false)
-
   const remove = async () => {
     if (!(await confirmAction('Excluir evento', `Excluir "${event.title}"?`))) return
     try {
@@ -85,20 +80,6 @@ function EventCard({ event, onChanged, onError }: EventCardProps) {
       onChanged()
     } catch (err) {
       onError(errorText(err, 'Não foi possível excluir o evento.'))
-    }
-  }
-
-  const addDate = async () => {
-    setSaving(true)
-    try {
-      await addEventSession.execute(event.id, toSessionData(draft))
-      setDraft(emptySession())
-      setAddingDate(false)
-      onChanged()
-    } catch (err) {
-      onError(errorText(err, 'Não foi possível adicionar a data.'))
-    } finally {
-      setSaving(false)
     }
   }
 
@@ -117,77 +98,31 @@ function EventCard({ event, onChanged, onError }: EventCardProps) {
           </View>
           <Text style={font.small}>venda abre em {formatDateTime(session.salesStart)}</Text>
           {session.sectors.map((sector) => (
-            <SectorLine key={sector.id} eventId={event.id} sessionId={session.id} sector={sector} onChanged={onChanged} onError={onError} />
+            <View key={sector.id} style={styles.sector}>
+              <Text style={{ flex: 1, fontSize: 13, fontWeight: '600', color: colors.ink }}>
+                {sector.name} · {formatPrice(sector.price)}
+              </Text>
+              <Text style={font.small}>
+                vendido {sector.sold} · disponível {sector.available} · capacidade {sector.capacity}
+              </Text>
+            </View>
           ))}
         </View>
       ))}
 
-      {addingDate && (
-        <>
-          <SessionFields value={draft} onChange={setDraft} title="Nova data" />
-          <Button title="Adicionar data" onPress={addDate} loading={saving} />
-        </>
-      )}
-
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        <Button title={addingDate ? 'cancelar nova data' : '+ nova data'} variant="link" onPress={() => setAddingDate((open) => !open)} />
-        <Button title="excluir evento" variant="link" onPress={remove} />
+      <View style={{ flexDirection: 'row', gap: spacing.md }}>
+        <Button
+          title="Editar evento"
+          onPress={() => router.push({ pathname: '/admin/editar/[id]', params: { id: event.id } })}
+          style={{ flex: 1 }}
+        />
+        <Button title="Excluir" variant="secondary" onPress={remove} style={{ flex: 1 }} />
       </View>
     </Card>
   )
 }
 
-interface SectorLineProps {
-  eventId: string
-  sessionId: string
-  sector: Sector
-  onChanged: () => void
-  onError: (message: string) => void
-}
-
-function SectorLine({ eventId, sessionId, sector, onChanged, onError }: SectorLineProps) {
-  const [capacity, setCapacity] = useState(String(sector.capacity))
-  const [saving, setSaving] = useState(false)
-
-  const changed = Number(capacity) !== sector.capacity
-
-  const save = async () => {
-    setSaving(true)
-    try {
-      await adjustSector.execute(eventId, sessionId, sector.id, { capacity: Number(capacity) })
-      onChanged()
-    } catch (err) {
-      onError(errorText(err, 'Não foi possível ajustar o setor.'))
-      setCapacity(String(sector.capacity))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <View style={styles.sector}>
-      <View style={{ flex: 1, gap: 2 }}>
-        <Text style={{ fontSize: 13, fontWeight: '700', color: colors.ink }}>
-          {sector.name} · {formatPrice(sector.price)}
-        </Text>
-        <Text style={font.small}>
-          disponível {sector.available} · reservado {sector.reserved} · vendido {sector.sold}
-        </Text>
-      </View>
-      <TextInput
-        accessibilityLabel={`Capacidade de ${sector.name}`}
-        value={capacity}
-        onChangeText={setCapacity}
-        keyboardType="number-pad"
-        style={styles.capacity}
-      />
-      {changed && <Button title="salvar" variant="link" onPress={save} loading={saving} />}
-    </View>
-  )
-}
-
 const styles = StyleSheet.create({
   session: { gap: spacing.xs, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.line },
-  sector: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs },
-  capacity: { width: 64, height: 36, paddingHorizontal: spacing.sm, borderWidth: 1, borderColor: colors.line, borderRadius: radius.sm, fontSize: 13, color: colors.ink, backgroundColor: colors.white },
+  sector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: spacing.sm, paddingVertical: spacing.xs },
 })

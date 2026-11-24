@@ -3,7 +3,7 @@
 Frontend do sistema: um único app em **Expo (React Native)** que roda no celular (Android e iOS, pelo Expo Go) e no navegador (`react-native-web`). Fala só com o gateway.
 
 ## Telas
-Vitrine (destaque e grade de eventos no computador), evento, login, cadastro, **fila e sacola**, **confirmação da compra (sem pagamento)**, **status do pedido**, perfil (ingressos em formato de bilhete com QR code e pedidos), e, para o administrador, **eventos** (criar, ajustar capacidade, nova data, excluir) e **relatório de vendas**.
+Vitrine (destaque e grade de eventos no computador), evento, login, cadastro, **escolha dos ingressos e compra (sem pagamento)**, **status do pedido** (`PROCESSANDO` → `REALIZADO` ou `CANCELADO`), perfil (ingressos em formato de bilhete com QR code e pedidos), e, para o administrador, **eventos** (criar, editar dados, datas e tipos de ingresso, e excluir o que for preciso) e **relatório de vendas**.
 
 ## Estrutura
 ```
@@ -31,13 +31,12 @@ No navegador, o gateway precisa liberar a origem do app (CORS): hoje `http://loc
 
 ## Detalhes
 - O token fica no `expo-secure-store` (celular) ou no `localStorage` (navegador).
-- "Confirmar compra" gera um `Idempotency-Key` por tentativa, para não criar dois pedidos num duplo toque.
-- A fila e o pedido são acompanhados por **polling** (3 s e 2 s).
-- Cartões de teste: final `1111` aprova, `0000` recusa, `2222` sem saldo, `9999` aprova devagar.
+- "Comprar" gera um `Idempotency-Key`, para não criar dois pedidos num duplo toque.
+- O status do pedido é acompanhado por **polling** (a cada 2 s), porque o estoque responde de forma assíncrona.
 
 ## Testes e qualidade
 ```bash
-npm test                  # Jest: 42 testes (máscaras, formulários, mapeadores, HTTP, polling)
+npm test                  # Jest: 29 testes (formulários, mapeadores, HTTP, polling)
 npx tsc --noEmit          # tipos
 npx expo lint
 ```

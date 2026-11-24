@@ -13,7 +13,7 @@ interface OrderPolling {
   elapsedSeconds: number
 }
 
-// A confirmação é assíncrona (RabbitMQ): consulta a cada 2 s e para sozinha em PAGO ou CANCELADO
+// A confirmação é assíncrona (RabbitMQ): consulta a cada 2 s e para sozinha em REALIZADO ou CANCELADO
 export function useOrderPolling(orderId: string): OrderPolling {
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)

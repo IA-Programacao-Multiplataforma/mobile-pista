@@ -37,17 +37,19 @@ function OrderScreen() {
     <Screen>
       <View style={{ gap: spacing.xs }}>
         <Eyebrow>SEU PEDIDO</Eyebrow>
-        {order && <Title>{order.eventTitle}</Title>}
-        {order && <Text style={font.small}>{formatDateTime(order.eventDate)} · {formatPrice(order.total)}</Text>}
+        {order && <Title>{order.eventTitle ?? 'Processando seu pedido'}</Title>}
+        {order?.eventDate && order.total !== null && (
+          <Text style={font.small}>{formatDateTime(order.eventDate)} · {formatPrice(order.total)}</Text>
+        )}
       </View>
 
       {loading && <ActivityIndicator color={colors.green} />}
       {error !== '' && !loading && <Banner kind="warn">{error} Tentando de novo...</Banner>}
 
-      {(status === 'PENDENTE' || status === 'CONFIRMANDO') && (
+      {status === 'PROCESSANDO' && (
         <Card style={{ alignItems: 'center' }}>
           <ActivityIndicator size="large" color={colors.green} />
-          <Text style={font.subtitle}>Confirmando seus ingressos...</Text>
+          <Text style={font.subtitle}>Verificando os ingressos no estoque...</Text>
           <Text style={[font.small, { textAlign: 'center' }]}>
             Pode levar alguns segundos. Não feche esta tela.
           </Text>
@@ -59,7 +61,7 @@ function OrderScreen() {
         </Card>
       )}
 
-      {status === 'PAGO' && order && (
+      {status === 'REALIZADO' && order && (
         <>
           <Card style={{ alignItems: 'center' }}>
             <View style={{ width: 54, height: 54, borderRadius: radius.pill, backgroundColor: colors.lime, alignItems: 'center', justifyContent: 'center' }}>
@@ -91,9 +93,7 @@ function OrderScreen() {
           <Ionicons name="alert-circle-outline" size={32} color={colors.warn} />
           <Text style={font.subtitle}>Pedido cancelado</Text>
           <Banner kind="warn">
-            {order?.reason === 'Reserva expirada ou liberada'
-              ? 'Sua reserva expirou antes da confirmação.'
-              : (order?.reason ?? 'Não foi possível confirmar seus ingressos.')}
+            {order?.reason ?? 'Não havia ingressos disponíveis.'}
           </Banner>
           <Button title="Voltar ao início" onPress={() => router.replace('/')} />
         </Card>

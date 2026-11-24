@@ -1,4 +1,4 @@
-// Só pedidos PAGOS contam como venda
+// Só pedidos REALIZADOS contam como venda
 export interface SectorSales {
   sectorName: string
   tickets: number
@@ -8,15 +8,14 @@ export interface SectorSales {
 export interface EventSales {
   eventId: string
   eventTitle: string
-  paidOrders: number
+  completedOrders: number
   tickets: number
   revenue: number
   sectors: SectorSales[]
 }
 
 export interface SalesTotals {
-  paidOrders: number
-  refusedOrders: number
+  completedOrders: number
   canceledOrders: number
   inProgressOrders: number
   tickets: number

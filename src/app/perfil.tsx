@@ -14,18 +14,14 @@ import { TicketCard } from '../presentation/tickets/TicketCard'
 import { font, spacing } from '../presentation/theme'
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
-  PENDENTE: 'Processando',
-  CONFIRMANDO: 'Confirmando',
-  PAGO: 'Pago',
-  RECUSADO: 'Recusado',
+  PROCESSANDO: 'Processando',
+  REALIZADO: 'Realizado',
   CANCELADO: 'Cancelado',
 }
 const STATUS_TONE: Record<OrderStatus, 'ok' | 'warn' | 'danger' | 'neutral'> = {
-  PENDENTE: 'warn',
-  CONFIRMANDO: 'warn',
-  PAGO: 'ok',
-  RECUSADO: 'danger',
-  CANCELADO: 'neutral',
+  PROCESSANDO: 'warn',
+  REALIZADO: 'ok',
+  CANCELADO: 'danger',
 }
 
 export default function ProfileRoute() {
@@ -95,14 +91,14 @@ function ProfileScreen() {
         <Pressable
           key={order.id}
           accessibilityRole="button"
-          accessibilityLabel={`Pedido de ${order.eventTitle}`}
+          accessibilityLabel={`Pedido de ${order.eventTitle ?? 'evento'}`}
           onPress={() => router.push({ pathname: '/pedido/[id]', params: { id: order.id } })}
         >
           <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flex: 1, gap: 2 }}>
-              <Text style={font.subtitle}>{order.eventTitle}</Text>
-              <Text style={font.small}>{formatPrice(order.total)}</Text>
-              {order.reason && order.status !== 'PAGO' && <Text style={font.small}>{order.reason}</Text>}
+              <Text style={font.subtitle}>{order.eventTitle ?? 'Pedido em processamento'}</Text>
+              {order.total !== null && <Text style={font.small}>{formatPrice(order.total)}</Text>}
+              {order.reason && order.status !== 'REALIZADO' && <Text style={font.small}>{order.reason}</Text>}
             </View>
             <Pill label={STATUS_LABEL[order.status]} tone={STATUS_TONE[order.status]} />
           </Card>

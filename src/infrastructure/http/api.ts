@@ -1,6 +1,7 @@
 import Constants from 'expo-constants'
 import * as SecureStore from 'expo-secure-store'
 import { Platform } from 'react-native'
+import { readCookie, removeCookie, SESSION_MAX_AGE_SECONDS, writeCookie } from './webCookies'
 
 // O app só fala com o gateway: EXPO_PUBLIC_API_URL, senão o IP da máquina do Expo
 // (no celular, "localhost" é o próprio celular), senão localhost
@@ -21,11 +22,26 @@ export const API_URL: string = resolveApiUrl()
 
 const TOKEN_KEY = 'pista.token'
 
-// Celular: armazenamento seguro (Keychain/Keystore); navegador: localStorage
+// No navegador a sessão fica num COOKIE (aba "Cookies" das ferramentas do desenvolvedor), com o mesmo
+// nome que o login usa (access_token) e a mesma duração do token (1 h). No celular continua no
+// armazenamento seguro (Keychain/Keystore).
+const WEB_COOKIE = 'access_token'
+
 export const tokenStorage = {
   async get(): Promise<string | null> {
     try {
-      if (Platform.OS === 'web') return localStorage.getItem(TOKEN_KEY)
+      if (Platform.OS === 'web') {
+        const cookie = readCookie(WEB_COOKIE)
+        if (cookie) return cookie
+
+        // Versões anteriores guardavam o token no localStorage: passa para o cookie e limpa o resto
+        const antigo = localStorage.getItem(TOKEN_KEY)
+        if (antigo) {
+          writeCookie(WEB_COOKIE, antigo, SESSION_MAX_AGE_SECONDS)
+          localStorage.removeItem(TOKEN_KEY)
+        }
+        return antigo
+      }
       return await SecureStore.getItemAsync(TOKEN_KEY)
     } catch {
       return null
@@ -33,15 +49,23 @@ export const tokenStorage = {
   },
   async save(token: string): Promise<void> {
     try {
-      if (Platform.OS === 'web') localStorage.setItem(TOKEN_KEY, token)
-      else await SecureStore.setItemAsync(TOKEN_KEY, token)
+      if (Platform.OS === 'web') {
+        writeCookie(WEB_COOKIE, token, SESSION_MAX_AGE_SECONDS)
+        localStorage.removeItem(TOKEN_KEY)
+      } else {
+        await SecureStore.setItemAsync(TOKEN_KEY, token)
+      }
     } catch {
     }
   },
   async clear(): Promise<void> {
     try {
-      if (Platform.OS === 'web') localStorage.removeItem(TOKEN_KEY)
-      else await SecureStore.deleteItemAsync(TOKEN_KEY)
+      if (Platform.OS === 'web') {
+        removeCookie(WEB_COOKIE)
+        localStorage.removeItem(TOKEN_KEY)
+      } else {
+        await SecureStore.deleteItemAsync(TOKEN_KEY)
+      }
     } catch {
     }
   },

@@ -8,7 +8,6 @@ export interface Sector {
   price: number
   capacity: number
   available: number
-  reserved: number
   sold: number
 }
 
@@ -55,8 +54,25 @@ export interface NewEventData {
   sessions: NewSessionData[]
 }
 
+// Dados do evento que o administrador edita (as datas e os setores têm edição própria)
+export interface EventEdit {
+  title: string
+  description: string
+  category: EventCategoryCode
+  venue: string
+  city: string
+  imageUrl: string
+  imageAlt: string
+}
+
+export interface SessionDates {
+  eventDate: string
+  salesStart: string
+}
+
 // Só o que foi informado muda
 export interface SectorAdjustment {
+  name?: string
   capacity?: number
   price?: number
 }

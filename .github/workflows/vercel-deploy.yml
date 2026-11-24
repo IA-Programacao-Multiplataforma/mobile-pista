@@ -43,6 +43,15 @@ jobs:
       - name: Baixar configuração do projeto Vercel
         run: vercel pull --yes --environment=${{ steps.env.outputs.target }} --token=${{ secrets.VERCEL_TOKEN }}
 
+      # A Vercel grava "[SENSITIVE]" no lugar de variáveis ocultas do painel e isso sobrescreve o secret
+      # do GitHub. Tira essa linha para o build usar o EXPO_PUBLIC_API_URL do secret.
+      - name: Garantir a URL da API vinda do secret
+        run: |
+          for f in .vercel/.env.*.local; do
+            [ -f "$f" ] && sed -i '/^EXPO_PUBLIC_API_URL=/d' "$f"
+          done
+          test -n "$EXPO_PUBLIC_API_URL" || { echo "Secret EXPO_PUBLIC_API_URL vazio"; exit 1; }
+
       - name: Build
         run: vercel build ${{ steps.env.outputs.flag }} --token=${{ secrets.VERCEL_TOKEN }}
 

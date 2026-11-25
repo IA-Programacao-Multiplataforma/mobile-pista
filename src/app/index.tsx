@@ -140,7 +140,7 @@ export default function StoreScreen() {
             <Eyebrow>FEITO PRA SAIR DE CASA</Eyebrow>
           </View>
           <Text style={[font.title, { fontSize: isDesktop ? 40 : 28 }]}>
-            Tem coisa boa <Text style={{ color: '#8a9b3f' }}>acontecendo.</Text>
+            Tem coisa boa <Text style={{ color: '#8a9b3f' }}>acontecendo agora.</Text>
           </Text>
         </View>
 

@@ -1,13 +1,12 @@
 import type { AuthUser, Credentials, RegisterData } from '../../domain/entities/AuthUser'
 import type { AuthRepository } from '../../domain/repositories/AuthRepository'
-import { API_URL, authHeaders, tokenStorage } from '../http/api'
+import { API_URL, authHeaders, fetchComRetentativa, tokenStorage } from '../http/api'
 
-// Gateway (8080) remove o "/login" e repassa ao serviço de login (8081)
 const AUTH_URL = `${API_URL}/login/autenticacao/v1`
 
-async function send(url: string, init?: RequestInit): Promise<Response> {
+async function send(url: string, init: RequestInit = {}, podeRepetir = true): Promise<Response> {
   try {
-    return await fetch(url, init)
+    return await fetchComRetentativa(url, init, podeRepetir)
   } catch {
     throw new Error('Não foi possível conectar ao servidor. Tente novamente.')
   }
@@ -43,7 +42,7 @@ export class HttpAuthRepository implements AuthRepository {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
-    })
+    }, false)
 
     if (!response.ok) {
       throw new Error(await errorMessage(response, 'Não foi possível criar a conta.'))

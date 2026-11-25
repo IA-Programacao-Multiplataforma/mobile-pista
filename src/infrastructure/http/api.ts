@@ -3,8 +3,6 @@ import * as SecureStore from 'expo-secure-store'
 import { Platform } from 'react-native'
 import { readCookie, removeCookie, SESSION_MAX_AGE_SECONDS, writeCookie } from './webCookies'
 
-// O app só fala com o gateway: EXPO_PUBLIC_API_URL, senão o IP da máquina do Expo
-// (no celular, "localhost" é o próprio celular), senão localhost
 function resolveApiUrl(): string {
   const configured = process.env.EXPO_PUBLIC_API_URL
   if (configured) return configured
@@ -22,9 +20,6 @@ export const API_URL: string = resolveApiUrl()
 
 const TOKEN_KEY = 'pista.token'
 
-// No navegador a sessão fica num COOKIE (aba "Cookies" das ferramentas do desenvolvedor), com o mesmo
-// nome que o login usa (access_token) e a mesma duração do token (1 h). No celular continua no
-// armazenamento seguro (Keychain/Keystore).
 const WEB_COOKIE = 'access_token'
 
 export const tokenStorage = {
@@ -34,7 +29,6 @@ export const tokenStorage = {
         const cookie = readCookie(WEB_COOKIE)
         if (cookie) return cookie
 
-        // Versões anteriores guardavam o token no localStorage: passa para o cookie e limpa o resto
         const antigo = localStorage.getItem(TOKEN_KEY)
         if (antigo) {
           writeCookie(WEB_COOKIE, antigo, SESSION_MAX_AGE_SECONDS)
@@ -87,6 +81,25 @@ export class ApiError extends Error {
   }
 }
 
+// Retry no consumo da API: tenta até 3 vezes, esperando 1s e depois 2s (espera crescente).
+export const RETENTATIVA = { tentativas: 3, esperaInicialMs: 1000 }
+const STATUS_TEMPORARIOS = [429, 502, 503, 504]
+
+const esperar = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+export async function fetchComRetentativa(url: string, init: RequestInit, podeRepetir: boolean): Promise<Response> {
+  for (let tentativa = 1; ; tentativa++) {
+    const ultima = !podeRepetir || tentativa >= RETENTATIVA.tentativas
+    try {
+      const response = await fetch(url, init)
+      if (ultima || !STATUS_TEMPORARIOS.includes(response.status)) return response
+    } catch (erro) {
+      if (ultima) throw erro
+    }
+    await esperar(RETENTATIVA.esperaInicialMs * 2 ** (tentativa - 1))
+  }
+}
+
 interface RequestOptions {
   method?: string
   body?: unknown
@@ -97,9 +110,12 @@ interface RequestOptions {
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, auth = false, headers = {} } = options
 
+  // Seguro repeti GET só lê
+  const podeRepetir = method === 'GET' || 'Idempotency-Key' in headers
+
   let response: Response
   try {
-    response = await fetch(`${API_URL}${path}`, {
+    response = await fetchComRetentativa(`${API_URL}${path}`, {
       method,
       headers: {
         ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
@@ -107,7 +123,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
         ...headers,
       },
       body: body === undefined ? undefined : JSON.stringify(body),
-    })
+    }, podeRepetir)
   } catch {
     throw new ApiError('Não foi possível conectar ao servidor. Tente novamente.', 0)
   }
@@ -123,7 +139,6 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       if (data.message) message = data.message
       extra = data
     } catch {
-      // resposta sem corpo JSON: mantém a mensagem genérica
     }
     throw new ApiError(message, response.status, extra)
   }

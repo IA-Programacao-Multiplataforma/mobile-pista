@@ -137,7 +137,7 @@ export default function StoreScreen() {
         <View style={{ gap: spacing.xs, flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
             <Ionicons name='musical-note' size={14} color={colors.coral} />
-            <Eyebrow>FEITO PRA SAIR DE CASA</Eyebrow>
+            <Eyebrow>QUERO FICAR EM CASA</Eyebrow>
           </View>
           <Text style={[font.title, { fontSize: isDesktop ? 40 : 28 }]}>
             Tem coisa boa <Text style={{ color: '#8a9b3f' }}>acontecendo agora.</Text>
